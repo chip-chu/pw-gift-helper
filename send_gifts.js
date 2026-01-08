@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Автоматизация отправки подарков для pwonline.ru
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Выбор предметов, серверов, персонажей и отправка подарков
 // @author       chip_chu
 // @match        https://pwonline.ru/promo_items.php
@@ -14,10 +14,10 @@
             showDebugButton: false,   // Добавляет кнопку для логов
             debugMode: false,         // Добавляет отдельную форму для просмотра логов
 
-            autoSelectItems: true, 
+            autoSelectItems: true,
             integrateIntoPage: true,
-            preferredServerName: '',
-            preferredCharacterNames: [],
+            preferredServerName: 'Фенрир',
+            preferredCharacterNames: ['Flipendо', 'Expulsо', 'Obliviatе', 'Revelio', 'Frаgilе', 'Reparo', 'Stupefу', 'Depulsо', 'Pullus', 'Diffindo', 'Incеndio', 'SeaTurtle_prospero']
         }
     ;
 
@@ -28,6 +28,7 @@
         accent: '#a01116',          // Акцентный цвет (красный)
         success: '#4CAF50',         // Успех (зеленый)
         warning: '#FF9800',         // Предупреждение (оранжевый)
+        clear: '#607D8B',           // Снятие выделения (серо-синий)
         buttonHover: '#e8dfcc',     // Ховер кнопок
         panelBackground: '#f8f6f0'  // Фон информационной панели
     };
@@ -158,6 +159,9 @@
         const selectAllBtn = createButton('✓ Выбрать все предметы', COLORS.success);
         buttonsContainer.appendChild(selectAllBtn);
 
+        const deselectAllBtn = createButton('✕ Снять выделение', COLORS.clear);
+        buttonsContainer.appendChild(deselectAllBtn);
+
         const transferBtn = createButton('🎁 Отправить подарки', COLORS.accent);
         buttonsContainer.appendChild(transferBtn);
 
@@ -223,8 +227,11 @@
     function setupEventListeners() {
         const serverSelect = document.getElementById('customServerSelect');
         const charSelect = document.getElementById('customCharSelect');
-        const selectAllBtn = document.querySelector('#customControls button:nth-child(1)');
-        const transferBtn = document.querySelector('#customControls button:nth-child(2)');
+        // Обращаемся к кнопкам по порядку добавления в buttonsContainer
+        const buttons = document.querySelectorAll('#customControls button');
+        const selectAllBtn = buttons[0];
+        const deselectAllBtn = buttons[1];
+        const transferBtn = buttons[2];
 
         serverSelect.addEventListener('change', function () {
             addDebugLog(`Выбран сервер: ${this.options[this.selectedIndex].text}`);
@@ -239,6 +246,7 @@
         });
 
         selectAllBtn.addEventListener('click', selectAllItems);
+        deselectAllBtn.addEventListener('click', deselectAllItems);
         transferBtn.addEventListener('click', transferItems);
     }
 
@@ -566,6 +574,33 @@
         } catch (error) {
             addDebugLog(`Ошибка при выборе предметов: ${error}`, 'error');
             showNotification('Ошибка при выборе предметов', 'error');
+        }
+    }
+
+    // Снятие выделения со всех чекбоксов
+    function deselectAllItems() {
+        try {
+            addDebugLog('Начало снятия выделения...');
+
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(:disabled):not(.js-item-check)');
+            let deselectedCount = 0;
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                    deselectedCount++;
+                    const event = new Event('change', {bubbles: true});
+                    checkbox.dispatchEvent(event);
+                }
+            });
+
+            updateInfoPanel();
+            addDebugLog(`Снято выделение с предметов: ${deselectedCount}`, 'info');
+            showNotification(`Снято выделение (${deselectedCount})`, 'info');
+
+        } catch (error) {
+            addDebugLog(`Ошибка при снятии выделения: ${error}`, 'error');
+            showNotification('Ошибка при снятии выделения', 'error');
         }
     }
 
